@@ -4,10 +4,11 @@ const authenticate = require('../authenticate');
 
 const campsiteRouter = express.Router();
 
+  //only populate the comments not campsites route error in instructions
+
 campsiteRouter.route('/')
 .get((req, res, next) => {
     Campsite.find()
-    .populate('comments.author')
     .then(campsites => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -15,7 +16,7 @@ campsiteRouter.route('/')
     })
     .catch(err => next(err));
 })
-.post(authenticate.verifyUser,(req, res, next) => {
+.post(authenticate.verifyUser,authenticate.verifyAdmin,(req, res, next) => {
     Campsite.create(req.body) //mongoose handles checking the data to make the data is okay
     .then(campsite => {
         console.log('Campsite created', campsite)
@@ -96,7 +97,7 @@ campsiteRouter.route('/:campsiteId/comments')
 })
 .post(authenticate.verifyUser,(req, res, next) => {
     Campsite.findById(req.params.campsiteId)
-    .then(campsite => {
+    .then((campsite) => {
         if (campsite) {
             req.body.author = req.user._id;
             campsite.comments.push(req.body);
@@ -104,7 +105,7 @@ campsiteRouter.route('/:campsiteId/comments')
             .then(campsite => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(campsite);
+                res.json(campsite.comments);
             })
             .catch(err => next(err));
         } else {
@@ -168,55 +169,25 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`);
 })
 .put(authenticate.verifyUser,(req, res, next) => {
-    Campsite.findById(req.params.campsiteId)
-    .then(campsite => {
-        if (campsite && campsite.comments.id(req.params.commentId)) {
-            if (req.body.rating) {
-                campsite.comments.id(req.params.commentId).rating = req.body.rating;
-            }
-            if (req.body.text) {
-                campsite.comments.id(req.params.commentId).text = req.body.text;
-            }
-            campsite.save()
-            .then(campsite => {
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json(campsite);
-            })
-            .catch(err => next(err));
-        } else if (!campsite) {
-            err = new Error(`Campsite ${req.params.campsiteId} not found`);
-            err.status = 404;
-            return next(err);
-        } else {
-            err = new Error(`Comment ${req.params.commentId} not found`);
-            err.status = 404;
-            return next(err);
-        }
+    Campsite.findByIdAndUpdate(req.params.campsiteId, 
+        {
+        $set: req.body
+        }, 
+        {new: true}
+    )
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
     })
     .catch(err => next(err));
 })
 .delete(authenticate.verifyUser,(req, res, next) => {
-    Campsite.findById(req.params.campsiteId)
-    .then(campsite => {
-        if (campsite && campsite.comments.id(req.params.commentId)) {
-            campsite.comments.id(req.params.commentId).remove();
-            campsite.save()
-            .then(campsite => {
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json(campsite);
-            })
-            .catch(err => next(err));
-        } else if (!campsite) {
-            err = new Error(`Campsite ${req.params.campsiteId} not found`);
-            err.status = 404;
-            return next(err);
-        } else {
-            err = new Error(`Comment ${req.params.commentId} not found`);
-            err.status = 404;
-            return next(err);
-        }
+    Campsite.findByIdAndDelete(req.params.campsiteId)
+    .then((response) => {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json");
+        res.json(response);
     })
     .catch(err => next(err));
 });
