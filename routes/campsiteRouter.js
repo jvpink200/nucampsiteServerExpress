@@ -190,11 +190,11 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             .catch(err => next(err));
         } else if (!campsite) {
             err = new Error(`Campsite ${req.params.campsiteId} not found`);
-            err.status = 404;
+            err.status = 403;
             return next(err);
         } else {
             err = new Error(`Comment ${req.params.commentId} not found`);
-            err.status = 404;
+            err.status = 403;
             return next(err);
         }
     })
@@ -214,11 +214,11 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             .catch(err => next(err));
         } else if (!campsite) {
             err = new Error(`Campsite ${req.params.campsiteId} not found`);
-            err.status = 404;
+            err.status = 403;
             return next(err);
         } else {
             err = new Error(`Comment ${req.params.commentId} not found`);
-            err.status = 404;
+            err.status = 403;
             return next(err);
         }
     })
